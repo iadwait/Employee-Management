@@ -45,7 +45,7 @@ app.post('/api/addEmployee', (req, res) => {
         return;
     } else if (!req.body.employeeName || req.body.employeeName.length < 3) {
         res.status(400);
-        res.send('Please provide employee name of atleast 3 characters long.');
+        res.send('Please provide employee name with atleast 3 characters long.');
         return;
     }
     // Check if employee with given id already exists
@@ -63,6 +63,22 @@ app.post('/api/addEmployee', (req, res) => {
     }
     EmployeeData.push(employeeData);
     res.send(employeeData);   
+});
+
+// API to update employee data
+app.put('/api/updateEmployeeData', (req, res) => {
+    // Fetch Employee to update
+    let empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID)) 
+    if (!empData) {
+        res.status(404).send('Employee with given employeeID does not exist.');;
+        return;
+    } else if (!req.body.employeeName || req.body.employeeName.length < 3) {
+        res.status(404).send('Please provide employee name with atleast 3 characters long.');
+        return;
+    }
+    // Update Data
+    empData.employeeName = req.body.employeeName
+    res.send(empData);
 });
 
 // List to a port
