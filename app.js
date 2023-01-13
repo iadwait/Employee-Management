@@ -81,6 +81,20 @@ app.put('/api/updateEmployeeData', (req, res) => {
     res.send(empData);
 });
 
+// API to delete employee data
+app.delete('/api/deleteEmployeeData', (req, res) => {
+    // Check if Employee with given ID Exists
+    let empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID)) 
+    if (!empData) {
+        res.status(404).send('Employee with given employeeID does not exist.');
+        return;
+    }
+    // Perform Delete
+    const empIndex = EmployeeData.indexOf(empData);
+    EmployeeData.splice(empIndex, 1);
+    res.send(EmployeeData);
+});
+
 // List to a port
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Listening on port: ${port}...`));
