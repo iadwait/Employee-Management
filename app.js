@@ -3,14 +3,46 @@
 // Tech - NodeJS, Express JS, MySQL DB
 
 const express = require('express');
+const mysql = require('mysql');
 const app = express();
+const connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'password',
+});
 app.use(express.json());
+
+// Create Schema
+// CREATE SCHEMA `EmployeeManagement` ;
+
+
+
+// Make Database Connection
+connection.connect((err) => {
+    if (err) {
+        console.log(err);
+    } else {
+        console.log('Database connected Successfully');
+        createDatabaseAndTables();
+    }
+});
+
+function createDatabaseAndTables() {
+    connection.query('create database IF NOT EXISTS EmployeeManagement', (err, result) => {
+        if (err) {
+            console.log(err);
+        } else {
+            // Database Created, now create table
+            
+        }
+    });
+}
 
 // MARK: - Variable Declarations
 const EmployeeData = [
-    {srNo: 1, employeeID: 0851, employeeName: "Adwait"},
-    {srNo: 2, employeeID: 1047, employeeName: "Vikrant"},
-    {srNo: 3, employeeID: 0852, employeeName: "Prasad"}
+    { srNo: 1, employeeID: 0851, employeeName: "Adwait" },
+    { srNo: 2, employeeID: 1047, employeeName: "Vikrant" },
+    { srNo: 3, employeeID: 0852, employeeName: "Prasad" }
 ];
 
 // MARK: - API's
@@ -49,7 +81,7 @@ app.post('/api/addEmployee', (req, res) => {
         return;
     }
     // Check if employee with given id already exists
-    const empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID)) 
+    const empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID))
     if (empData) {
         // Employee with given ID already exists
         res.status(400).send('The employee with given employeeID already exists.');
@@ -62,13 +94,13 @@ app.post('/api/addEmployee', (req, res) => {
         employeeName: req.body.employeeName
     }
     EmployeeData.push(employeeData);
-    res.send(employeeData);   
+    res.send(employeeData);
 });
 
 // API to update employee data
 app.put('/api/updateEmployeeData', (req, res) => {
     // Fetch Employee to update
-    let empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID)) 
+    let empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID))
     if (!empData) {
         res.status(404).send('Employee with given employeeID does not exist.');;
         return;
@@ -84,7 +116,7 @@ app.put('/api/updateEmployeeData', (req, res) => {
 // API to delete employee data
 app.delete('/api/deleteEmployeeData', (req, res) => {
     // Check if Employee with given ID Exists
-    let empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID)) 
+    let empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID))
     if (!empData) {
         res.status(404).send('Employee with given employeeID does not exist.');
         return;
