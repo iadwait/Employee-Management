@@ -65,7 +65,7 @@ app.get('/api/employeeDetails', (req, res) => {
     if (isSQLConfigurationSuccess) {
         res.send(EmployeeData);
     } else {
-        res.send('Facing technical issues with Database, Please try again later.');
+        res.status(503).send('Facing technical issues with Database, Please try again later.');
     }
 });
 
@@ -80,7 +80,7 @@ app.get('/api/employeeDetails/:employeeID', (req, res) => {
         }
         res.status(200).send(employeeData);
     } else {
-        res.send('Facing technical issues with Database, Please try again later.');
+        res.status(503).send('Facing technical issues with Database, Please try again later.');
     }
 });
 
@@ -113,7 +113,7 @@ app.post('/api/addEmployee', (req, res) => {
         EmployeeData.push(employeeData);
         res.send(employeeData);
     } else {
-        res.send('Facing technical issues with Database, Please try again later.');
+        res.status(503).send('Facing technical issues with Database, Please try again later.');
     }
 });
 
@@ -133,7 +133,7 @@ app.put('/api/updateEmployeeData', (req, res) => {
         empData.employeeName = req.body.employeeName
         res.send(empData);
     } else {
-        res.send('Facing technical issues with Database, Please try again later.');
+        res.status(503).send('Facing technical issues with Database, Please try again later.');
     }
 });
 
@@ -151,7 +151,7 @@ app.delete('/api/deleteEmployeeData', (req, res) => {
         EmployeeData.splice(empIndex, 1);
         res.send(EmployeeData);
     } else {
-        res.send('Facing technical issues with Database, Please try again later.');
+        res.status(503).send('Facing technical issues with Database, Please try again later.');
     }
 });
 
