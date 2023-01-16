@@ -13,21 +13,17 @@ const connection = mysql.createConnection({
 });
 app.use(express.json());
 
-// Create Schema
-// CREATE SCHEMA `EmployeeManagement` ;
-
-
-
 // Make Database Connection
 connection.connect((err) => {
     if (err) {
         console.log(err);
     } else {
-        console.log('Database connected Successfully');
+        console.log('Database connected Successfully !!');
         createDatabaseAndTables();
     }
 });
 
+// Function to create Database and Tables IF NOT Exist
 function createDatabaseAndTables() {
     connection.query('create database IF NOT EXISTS EmployeeManagement', (err, result) => {
         if (err) {
@@ -38,7 +34,7 @@ function createDatabaseAndTables() {
                 if (err) {
                     console.log('EmployeeData Table Creation Failure !!');
                 } else {
-                    console.log('Database and Tables configured success, ready to use the application !');
+                    console.log('Database and Tables configured success, ready to use the application !!');
                     isSQLConfigurationSuccess = true;
                 }
             });
