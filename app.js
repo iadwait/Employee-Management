@@ -34,8 +34,15 @@ function createDatabaseAndTables() {
                 if (err) {
                     console.log('EmployeeData Table Creation Failure !!');
                 } else {
-                    console.log('Database and Tables configured success, ready to use the application !!');
-                    isSQLConfigurationSuccess = true;
+                    // Use Database
+                    connection.query('USE EmployeeManagement;', (err, result) => {
+                        if (err) {
+                            res.send(err);
+                        } else {
+                            console.log('Database and Tables configured success, ready to use the application !!');
+                            isSQLConfigurationSuccess = true;
+                        }
+                    });
                 }
             });
         }
@@ -59,7 +66,14 @@ app.get('/api/serverHealth', (req, res) => {
 // API to get all Employee Details
 app.get('/api/employeeDetails', (req, res) => {
     if (isSQLConfigurationSuccess) {
-        res.send(EmployeeData);
+        connection.query('SELECT * FROM EmployeeData', (err, result) => {
+            if (err) {
+                res.send(err);
+            } else {
+                res.send(result);
+            }
+        });
+        //res.send(EmployeeData);
     } else {
         res.status(503).send('Facing technical issues with Database, Please try again later.');
     }
@@ -68,13 +82,24 @@ app.get('/api/employeeDetails', (req, res) => {
 // API to get specific employee details by ID
 app.get('/api/employeeDetails/:employeeID', (req, res) => {
     if (isSQLConfigurationSuccess) {
-        const employeeData = EmployeeData.find(e => e.employeeID === parseInt(req.params.employeeID))
-        if (!employeeData) {
-            res.status(404);
-            res.send('Employee with given Employee ID not present.');
-            return;
-        }
-        res.status(200).send(employeeData);
+        const query = "SELECT * FROM EmployeeData WHERE `Employee ID` = " + req.params.employeeID
+        connection.query(query, (err, result) => {
+            if (err) {
+                res.send(err);
+                //res.send('Employee with given ID dose not exist');
+            } else {
+                console.log(query)
+                res.send(result);
+            }
+        });
+
+        // const employeeData = EmployeeData.find(e => e.employeeID === parseInt(req.params.employeeID))
+        // if (!employeeData) {
+        //     res.status(404);
+        //     res.send('Employee with given Employee ID not present.');
+        //     return;
+        // }
+        // res.status(200).send(employeeData);
     } else {
         res.status(503).send('Facing technical issues with Database, Please try again later.');
     }
@@ -101,13 +126,21 @@ app.post('/api/addEmployee', (req, res) => {
             return;
         }
         // Input Data on Database
-        const employeeData = {
-            srNo: EmployeeData.length + 1,
-            employeeID: parseInt(req.body.employeeID),
-            employeeName: req.body.employeeName
-        }
-        EmployeeData.push(employeeData);
-        res.send(employeeData);
+        // const employeeData = {
+        //     srNo: EmployeeData.length + 1,
+        //     employeeID: parseInt(req.body.employeeID),
+        //     employeeName: req.body.employeeName
+        // }
+        // EmployeeData.push(employeeData);
+
+        connection.query("INSERT INTO `EmployeeManagement`.`EmployeeData` (`Employee ID`, `EmployeeName`) VALUES ('" + parseInt(req.body.employeeID) + "', '" + req.body.employeeName + "');", (err, result) => {
+            if (err) {
+                res.status(400).send('Failed to insert data into database, Please check your request and try again.');
+            } else {
+                res.status(200).send('Employee Data Inserted Successfully !!');
+            }
+        });
+        //res.send(employeeData);
     } else {
         res.status(503).send('Facing technical issues with Database, Please try again later.');
     }
@@ -116,18 +149,27 @@ app.post('/api/addEmployee', (req, res) => {
 // API to update employee data
 app.put('/api/updateEmployeeData', (req, res) => {
     if (isSQLConfigurationSuccess) {
-        // Fetch Employee to update
-        let empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID))
-        if (!empData) {
-            res.status(404).send('Employee with given employeeID does not exist.');;
-            return;
-        } else if (!req.body.employeeName || req.body.employeeName.length < 3) {
-            res.status(404).send('Please provide employee name with atleast 3 characters long.');
-            return;
-        }
-        // Update Data
-        empData.employeeName = req.body.employeeName
-        res.send(empData);
+
+        connection.query("UPDATE `EmployeeData` SET EmployeeName = '" + req.body.employeeName + "' WHERE `Employee ID` = " + req.body.employeeID, (err, result) => {
+            if (err) {
+                res.status(400).send('Failed to update data into database, Please check your request and try again.');
+            } else {
+                res.status(200).send('Employee Data Updated Successfully !!');
+            }
+        });
+
+        // // Fetch Employee to update
+        // let empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID))
+        // if (!empData) {
+        //     res.status(404).send('Employee with given employeeID does not exist.');;
+        //     return;
+        // } else if (!req.body.employeeName || req.body.employeeName.length < 3) {
+        //     res.status(404).send('Please provide employee name with atleast 3 characters long.');
+        //     return;
+        // }
+        // // Update Data
+        // empData.employeeName = req.body.employeeName
+        // res.send(empData);
     } else {
         res.status(503).send('Facing technical issues with Database, Please try again later.');
     }
@@ -136,16 +178,25 @@ app.put('/api/updateEmployeeData', (req, res) => {
 // API to delete employee data
 app.delete('/api/deleteEmployeeData', (req, res) => {
     if (isSQLConfigurationSuccess) {
-        // Check if Employee with given ID Exists
-        let empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID))
-        if (!empData) {
-            res.status(404).send('Employee with given employeeID does not exist.');
-            return;
-        }
-        // Perform Delete
-        const empIndex = EmployeeData.indexOf(empData);
-        EmployeeData.splice(empIndex, 1);
-        res.send(EmployeeData);
+        connection.query("DELETE FROM `EmployeeData` WHERE `Employee ID` = " + req.body.employeeID, (err, result) => {
+            if (err) {
+                res.status(400).send('Failed to delete data into database, Please check your request and try again.');
+            } else {
+                res.status(200).send('Employee Data Deleted Successfully !!');
+            }
+        });
+
+
+        // // Check if Employee with given ID Exists
+        // let empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID))
+        // if (!empData) {
+        //     res.status(404).send('Employee with given employeeID does not exist.');
+        //     return;
+        // }
+        // // Perform Delete
+        // const empIndex = EmployeeData.indexOf(empData);
+        // EmployeeData.splice(empIndex, 1);
+        // res.send(EmployeeData);
     } else {
         res.status(503).send('Facing technical issues with Database, Please try again later.');
     }
