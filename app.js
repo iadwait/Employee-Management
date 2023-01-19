@@ -56,7 +56,11 @@ app.get('/api/employeeDetails', (req, res) => {
             if (err) {
                 responseHelper.baseResponse(false, null, 400, err, res)
             } else {
-                responseHelper.baseResponse(true, result, null, null, res)
+                const formattedResponse = {
+                    employeeDetails: result,
+                    totalEmployees: result.length
+                }
+                responseHelper.baseResponse(true, formattedResponse, null, null, res)
             }
         });
     } else {
