@@ -4,6 +4,7 @@
 
 require('dotenv').config();
 const express = require('express');
+const responseHelper = require('./ResponseHelper/responseHelper');
 const mysql = require('mysql');
 const app = express();
 let isSQLConfigurationSuccess = false
@@ -61,7 +62,7 @@ const EmployeeData = [
 
 // API to check if server is running
 app.get('/api/serverHealth', (req, res) => {
-    res.send('Employee Server up and running !');
+    responseHelper.baseResponse(true, 'Employee Server up and running !', null, null, res)
 });
 
 // API to get all Employee Details
@@ -69,13 +70,13 @@ app.get('/api/employeeDetails', (req, res) => {
     if (isSQLConfigurationSuccess) {
         connection.query('SELECT * FROM EmployeeData', (err, result) => {
             if (err) {
-                res.send(err);
+                responseHelper.baseResponse(false, null, 400, err, res)
             } else {
-                res.send(result);
+                responseHelper.baseResponse(true, result, null, null, res)
             }
         });
     } else {
-        res.status(503).send('Facing technical issues with Database, Please try again later.');
+        responseHelper.baseResponse(false, null, 503, 'Facing technical issues with Database, Please try again later.', res)
     }
 });
 
@@ -85,15 +86,13 @@ app.get('/api/employeeDetails/:employeeID', (req, res) => {
         const query = "SELECT * FROM EmployeeData WHERE `Employee ID` = " + req.params.employeeID
         connection.query(query, (err, result) => {
             if (err) {
-                res.send(err);
-                //res.send('Employee with given ID dose not exist');
+                responseHelper.baseResponse(false, null, 400, err, res)
             } else {
-                console.log(query)
-                res.send(result);
+                responseHelper.baseResponse(true, result, null, null, res)
             }
         });
     } else {
-        res.status(503).send('Facing technical issues with Database, Please try again later.');
+        responseHelper.baseResponse(false, null, 503, 'Facing technical issues with Database, Please try again later.', res)
     }
 });
 
@@ -102,63 +101,96 @@ app.post('/api/addEmployee', (req, res) => {
     if (isSQLConfigurationSuccess) {
         // Validate request data
         if (!req.body.employeeID || req.body.employeeID.length < 1) {
-            res.status(400);
-            res.send('Employee ID should not be empty.');
+            responseHelper.baseResponse(false, null, 400, 'Employee ID should not be empty.', res)
             return;
         } else if (!req.body.employeeName || req.body.employeeName.length < 3) {
-            res.status(400);
-            res.send('Please provide employee name with atleast 3 characters long.');
+            responseHelper.baseResponse(false, null, 400, 'Please provide employee name with atleast 3 characters long.', res)
             return;
         }
-        // Check if employee with given id already exists
-        const empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID))
-        if (empData) {
-            // Employee with given ID already exists
-            res.status(400).send('The employee with given employeeID already exists.');
-            return;
-        }
-        // Input Data on Database
-        connection.query("INSERT INTO `EmployeeManagement`.`EmployeeData` (`Employee ID`, `EmployeeName`) VALUES ('" + parseInt(req.body.employeeID) + "', '" + req.body.employeeName + "');", (err, result) => {
+        const query = "SELECT EmployeeName FROM EmployeeData WHERE `Employee ID`= " + req.body.employeeID
+        connection.query(query, function (err, row) {
             if (err) {
-                res.status(400).send('Failed to insert data into database, Please check your request and try again.');
+                responseHelper.baseResponse(false, null, 400, 'Please check your request and try again.', res)
+                return;
             } else {
-                res.status(200).send('Employee Data Inserted Successfully !!');
+                if (row.length != 0) {
+                    responseHelper.baseResponse(false, null, 400, 'Employee with the given ID already exist.', res)
+                    return;
+                } else {
+                    // Input Data on Database
+                    connection.query("INSERT INTO `EmployeeManagement`.`EmployeeData` (`Employee ID`, `EmployeeName`) VALUES ('" + parseInt(req.body.employeeID) + "', '" + req.body.employeeName + "');", (err, result) => {
+                        if (err) {
+                            responseHelper.baseResponse(false, null, 400, 'Failed to insert data into database, Please check your request and try again.', res)
+                        } else {
+                            responseHelper.baseResponse(true, 'Employee Data Inserted Successfully !!', null, null, res)
+                        }
+                    });
+                }
             }
         });
-        //res.send(employeeData);
     } else {
-        res.status(503).send('Facing technical issues with Database, Please try again later.');
+        responseHelper.baseResponse(false, null, 503, 'Facing technical issues with Database, Please try again later.', res)
     }
 });
 
 // API to update employee data
 app.put('/api/updateEmployeeData', (req, res) => {
     if (isSQLConfigurationSuccess) {
-
-        connection.query("UPDATE `EmployeeData` SET EmployeeName = '" + req.body.employeeName + "' WHERE `Employee ID` = " + req.body.employeeID, (err, result) => {
+        // Validate request data
+        if (!req.body.employeeID || req.body.employeeID.length < 1) {
+            responseHelper.baseResponse(false, null, 400, 'Employee ID should not be empty.', res)
+            return;
+        }
+        // Check if Employee with the given ID Exists
+        const query = "SELECT EmployeeName FROM EmployeeData WHERE `Employee ID`= " + req.body.employeeID
+        connection.query(query, function (err, row) {
             if (err) {
-                res.status(400).send('Failed to update data into database, Please check your request and try again.');
+                responseHelper.baseResponse(false, null, 400, 'Please check your request and try again.', res)
+                return;
             } else {
-                res.status(200).send('Employee Data Updated Successfully !!');
+                if (row.length == 0) {
+                    responseHelper.baseResponse(false, null, 400, 'Employee with the given ID does not exist.', res)
+                } else {
+                    connection.query("UPDATE `EmployeeData` SET EmployeeName = '" + req.body.employeeName + "' WHERE `Employee ID` = " + req.body.employeeID, (err, result) => {
+                        if (err) {
+                            responseHelper.baseResponse(false, null, 400, 'Failed to update data into database, Please check your request and try again.', res)
+                        } else {
+                            responseHelper.baseResponse(true, 'Employee Data Updated Successfully !!', null, null, res)
+                        }
+                    });
+                }
             }
         });
     } else {
-        res.status(503).send('Facing technical issues with Database, Please try again later.');
+        responseHelper.baseResponse(false, null, 503, 'Facing technical issues with Database, Please try again later.', res)
     }
 });
 
 // API to delete employee data
-app.delete('/api/deleteEmployeeData', (req, res) => {
+app.delete('/api/deleteEmployeeData', async (req, res) => {
     if (isSQLConfigurationSuccess) {
-        connection.query("DELETE FROM `EmployeeData` WHERE `Employee ID` = " + req.body.employeeID, (err, result) => {
+        const query = "SELECT EmployeeName FROM EmployeeData WHERE `Employee ID`= " + req.body.employeeID
+        connection.query(query, function (err, row) {
             if (err) {
-                res.status(400).send('Failed to delete data into database, Please check your request and try again.');
+                responseHelper.baseResponse(false, null, 400, 'Employee with the given ID does not exist', res)
+                return;
             } else {
-                res.status(200).send('Employee Data Deleted Successfully !!');
+                if (row.length == 0 || row === undefined) {
+                    responseHelper.baseResponse(false, null, 400, 'Employee with the given ID does not exist', res)
+                    return;
+                }
+                // Employee Exist Perform Delete operation
+                connection.query("DELETE FROM `EmployeeData` WHERE `Employee ID` = " + req.body.employeeID, (err, result) => {
+                    if (err) {
+                        responseHelper.baseResponse(false, null, 400, 'Failed to delete data into database, Please check your request and try again.', res)
+                    } else {
+                        responseHelper.baseResponse(true, 'Employee Data Deleted Successfully !!', null, null, res)
+                    }
+                });
             }
         });
     } else {
-        res.status(503).send('Facing technical issues with Database, Please try again later.');
+        responseHelper.baseResponse(false, null, 503, 'Facing technical issues with Database, Please try again later.', res)
     }
 });
 
