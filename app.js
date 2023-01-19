@@ -4,40 +4,28 @@
 
 require('dotenv').config();
 const express = require('express');
-const responseHelper = require('./ResponseHelper/responseHelper');
-const mysql = require('mysql');
 const app = express();
-let isSQLConfigurationSuccess = false
-const connection = mysql.createConnection({
-    host: process.env.DATABASE_HOSTNAME,
-    user: process.env.DATABASE_USER,
-    password: process.env.DATABASE_PASSWORD,
-});
 app.use(express.json());
-
-// Make Database Connection
-connection.connect((err) => {
-    if (err) {
-        console.log(err);
-    } else {
-        console.log('Database connected Successfully !!');
-        createDatabaseAndTables();
-    }
-});
+const connection = require('./DatabaseHelper/dbHelper');
+const responseHelper = require('./ResponseHelper/responseHelper');
+let isSQLConfigurationSuccess = false
 
 // Function to create Database and Tables IF NOT Exist
 function createDatabaseAndTables() {
-    connection.query('create database IF NOT EXISTS EmployeeManagement', (err, result) => {
+    const query = 'create database IF NOT EXISTS EmployeeManagement'
+    connection.query(query, (err, result) => {
         if (err) {
             console.log(err);
         } else {
             // Database Created, now create table
-            connection.query('CREATE TABLE IF NOT EXISTS `EmployeeManagement`.`EmployeeData` (`Employee ID` INT NOT NULL,`EmployeeName` VARCHAR(60) NOT NULL,PRIMARY KEY (`Employee ID`),UNIQUE INDEX `Employee ID_UNIQUE` (`Employee ID` ASC) VISIBLE)', (err, result) => {
+            const query = 'CREATE TABLE IF NOT EXISTS `EmployeeManagement`.`EmployeeData` (`Employee ID` INT NOT NULL,`EmployeeName` VARCHAR(60) NOT NULL,PRIMARY KEY (`Employee ID`),UNIQUE INDEX `Employee ID_UNIQUE` (`Employee ID` ASC) VISIBLE)'
+            connection.query(query, (err, result) => {
                 if (err) {
                     console.log('EmployeeData Table Creation Failure !!');
                 } else {
                     // Use Database
-                    connection.query('USE EmployeeManagement;', (err, result) => {
+                    const query = 'USE EmployeeManagement;'
+                    connection.query(query, (err, result) => {
                         if (err) {
                             res.send(err);
                         } else {
@@ -51,12 +39,7 @@ function createDatabaseAndTables() {
     });
 }
 
-// MARK: - Variable Declarations
-const EmployeeData = [
-    // { srNo: 1, employeeID: 0851, employeeName: "Adwait" },
-    // { srNo: 2, employeeID: 1047, employeeName: "Vikrant" },
-    // { srNo: 3, employeeID: 0852, employeeName: "Prasad" }
-];
+createDatabaseAndTables();
 
 // MARK: - API's
 
@@ -68,11 +51,16 @@ app.get('/api/serverHealth', (req, res) => {
 // API to get all Employee Details
 app.get('/api/employeeDetails', (req, res) => {
     if (isSQLConfigurationSuccess) {
-        connection.query('SELECT * FROM EmployeeData', (err, result) => {
+        const query = 'SELECT * FROM EmployeeData'
+        connection.query(query, (err, result) => {
             if (err) {
                 responseHelper.baseResponse(false, null, 400, err, res)
             } else {
-                responseHelper.baseResponse(true, result, null, null, res)
+                const formattedResponse = {
+                    employeeDetails: result,
+                    totalEmployees: result.length
+                }
+                responseHelper.baseResponse(true, formattedResponse, null, null, res)
             }
         });
     } else {
@@ -118,7 +106,8 @@ app.post('/api/addEmployee', (req, res) => {
                     return;
                 } else {
                     // Input Data on Database
-                    connection.query("INSERT INTO `EmployeeManagement`.`EmployeeData` (`Employee ID`, `EmployeeName`) VALUES ('" + parseInt(req.body.employeeID) + "', '" + req.body.employeeName + "');", (err, result) => {
+                    const query = "INSERT INTO `EmployeeManagement`.`EmployeeData` (`Employee ID`, `EmployeeName`) VALUES ('" + parseInt(req.body.employeeID) + "', '" + req.body.employeeName + "');"
+                    connection.query(query, (err, result) => {
                         if (err) {
                             responseHelper.baseResponse(false, null, 400, 'Failed to insert data into database, Please check your request and try again.', res)
                         } else {
@@ -151,7 +140,8 @@ app.put('/api/updateEmployeeData', (req, res) => {
                 if (row.length == 0) {
                     responseHelper.baseResponse(false, null, 400, 'Employee with the given ID does not exist.', res)
                 } else {
-                    connection.query("UPDATE `EmployeeData` SET EmployeeName = '" + req.body.employeeName + "' WHERE `Employee ID` = " + req.body.employeeID, (err, result) => {
+                    const query = "UPDATE `EmployeeData` SET EmployeeName = '" + req.body.employeeName + "' WHERE `Employee ID` = " + req.body.employeeID
+                    connection.query(query, (err, result) => {
                         if (err) {
                             responseHelper.baseResponse(false, null, 400, 'Failed to update data into database, Please check your request and try again.', res)
                         } else {
@@ -180,7 +170,8 @@ app.delete('/api/deleteEmployeeData', async (req, res) => {
                     return;
                 }
                 // Employee Exist Perform Delete operation
-                connection.query("DELETE FROM `EmployeeData` WHERE `Employee ID` = " + req.body.employeeID, (err, result) => {
+                const query = "DELETE FROM `EmployeeData` WHERE `Employee ID` = " + req.body.employeeID
+                connection.query(query, (err, result) => {
                     if (err) {
                         responseHelper.baseResponse(false, null, 400, 'Failed to delete data into database, Please check your request and try again.', res)
                     } else {
