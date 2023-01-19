@@ -137,12 +137,29 @@ app.post('/api/addEmployee', (req, res) => {
 // API to update employee data
 app.put('/api/updateEmployeeData', (req, res) => {
     if (isSQLConfigurationSuccess) {
-
-        connection.query("UPDATE `EmployeeData` SET EmployeeName = '" + req.body.employeeName + "' WHERE `Employee ID` = " + req.body.employeeID, (err, result) => {
+        // Validate request data
+        if (!req.body.employeeID || req.body.employeeID.length < 1) {
+            failureResponse(400, 'Employee ID should not be empty.', res)
+            return;
+        }
+        // Check if Employee with the given ID Exists
+        const query = "SELECT EmployeeName FROM EmployeeData WHERE `Employee ID`= " + req.body.employeeID
+        connection.query(query, function (err, row) {
             if (err) {
-                failureResponse(400, 'Failed to update data into database, Please check your request and try again.', res)
+                failureResponse(400, 'Please check your request and try again.', res)
+                return;
             } else {
-                res.status(200).send('Employee Data Updated Successfully !!');
+                if (row.length == 0) {
+                    failureResponse(400, 'Employee with the given ID does not exist.', res)
+                } else {
+                    connection.query("UPDATE `EmployeeData` SET EmployeeName = '" + req.body.employeeName + "' WHERE `Employee ID` = " + req.body.employeeID, (err, result) => {
+                        if (err) {
+                            failureResponse(400, 'Failed to update data into database, Please check your request and try again.', res)
+                        } else {
+                            res.status(200).send('Employee Data Updated Successfully !!');
+                        }
+                    });
+                }
             }
         });
     } else {
