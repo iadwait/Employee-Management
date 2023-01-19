@@ -108,22 +108,27 @@ app.post('/api/addEmployee', (req, res) => {
             failureResponse(400, 'Please provide employee name with atleast 3 characters long.', res)
             return;
         }
-        // Check if employee with given id already exists
-        const empData = EmployeeData.find(e => e.employeeID === parseInt(req.body.employeeID))
-        if (empData) {
-            // Employee with given ID already exists
-            failureResponse(400, 'The employee with given employeeID already exists.', res)
-            return;
-        }
-        // Input Data on Database
-        connection.query("INSERT INTO `EmployeeManagement`.`EmployeeData` (`Employee ID`, `EmployeeName`) VALUES ('" + parseInt(req.body.employeeID) + "', '" + req.body.employeeName + "');", (err, result) => {
+        const query = "SELECT EmployeeName FROM EmployeeData WHERE `Employee ID`= " + req.body.employeeID
+        connection.query(query, function (err, row) {
             if (err) {
-                failureResponse(400, 'Failed to insert data into database, Please check your request and try again.', res)
+                failureResponse(400, 'Please check your request and try again.', res)
+                return;
             } else {
-                res.status(200).send('Employee Data Inserted Successfully !!');
+                if (row.length != 0) {
+                    failureResponse(400, 'Employee with the given ID already exist.', res)
+                    return;
+                } else {
+                    // Input Data on Database
+                    connection.query("INSERT INTO `EmployeeManagement`.`EmployeeData` (`Employee ID`, `EmployeeName`) VALUES ('" + parseInt(req.body.employeeID) + "', '" + req.body.employeeName + "');", (err, result) => {
+                        if (err) {
+                            failureResponse(400, 'Failed to insert data into database, Please check your request and try again.', res)
+                        } else {
+                            res.status(200).send('Employee Data Inserted Successfully !!');
+                        }
+                    });
+                }
             }
         });
-        //res.send(employeeData);
     } else {
         failureResponse(503, 'Facing technical issues with Database, Please try again later.', res)
     }
