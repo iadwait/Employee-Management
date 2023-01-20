@@ -7,6 +7,7 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 const connection = require('./DatabaseHelper/dbHelper');
+const queries = require('./DatabaseHelper/sqlQueries');
 const responseHelper = require('./ResponseHelper/responseHelper');
 const constants = require('./Utils/constants');
 const statusCode = constants.StatusCodes
@@ -14,19 +15,19 @@ let isSQLConfigurationSuccess = false
 
 // Function to create Database and Tables IF NOT Exist
 function createDatabaseAndTables() {
-    const query = 'create database IF NOT EXISTS EmployeeManagement'
+    const query = queries.createDatabase
     connection.query(query, (err, result) => {
         if (err) {
             console.log(err);
         } else {
             // Database Created, now create table
-            const query = 'CREATE TABLE IF NOT EXISTS `EmployeeManagement`.`EmployeeData` (`Employee ID` INT NOT NULL,`EmployeeName` VARCHAR(60) NOT NULL,PRIMARY KEY (`Employee ID`),UNIQUE INDEX `Employee ID_UNIQUE` (`Employee ID` ASC) VISIBLE)'
+            const query = queries.createEmployeeDataTable
             connection.query(query, (err, result) => {
                 if (err) {
                     console.log('EmployeeData Table Creation Failure !!');
                 } else {
                     // Use Database
-                    const query = 'USE EmployeeManagement;'
+                    const query = queries.useEmployeeManagementDB
                     connection.query(query, (err, result) => {
                         if (err) {
                             res.send(err);
@@ -53,7 +54,7 @@ app.get('/api/serverHealth', (req, res) => {
 // API to get all Employee Details
 app.get('/api/employeeDetails', (req, res) => {
     if (isSQLConfigurationSuccess) {
-        const query = 'SELECT * FROM EmployeeData'
+        const query = queries.fetchAllEmployeesData
         connection.query(query, (err, result) => {
             if (err) {
                 responseHelper.baseResponse(false, null, statusCode.badRequest, err, res)
@@ -73,7 +74,7 @@ app.get('/api/employeeDetails', (req, res) => {
 // API to get specific employee details by ID
 app.get('/api/employeeDetails/:employeeID', (req, res) => {
     if (isSQLConfigurationSuccess) {
-        const query = "SELECT * FROM EmployeeData WHERE `Employee ID` = " + req.params.employeeID
+        const query = queries.fetchEmployeeByID + req.params.employeeID
         connection.query(query, (err, result) => {
             if (err) {
                 responseHelper.baseResponse(false, null, statusCode.badRequest, err, res)
@@ -97,7 +98,7 @@ app.post('/api/addEmployee', (req, res) => {
             responseHelper.baseResponse(false, null, statusCode.badRequest, 'Please provide employee name with atleast 3 characters long.', res)
             return;
         }
-        const query = "SELECT EmployeeName FROM EmployeeData WHERE `Employee ID`= " + req.body.employeeID
+        const query = queries.fetchEmployeeNameByID + req.body.employeeID
         connection.query(query, function (err, row) {
             if (err) {
                 responseHelper.baseResponse(false, null, statusCode.badRequest, 'Please check your request and try again.', res)
@@ -133,7 +134,7 @@ app.put('/api/updateEmployeeData', (req, res) => {
             return;
         }
         // Check if Employee with the given ID Exists
-        const query = "SELECT EmployeeName FROM EmployeeData WHERE `Employee ID`= " + req.body.employeeID
+        const query = queries.fetchEmployeeNameByID + req.body.employeeID
         connection.query(query, function (err, row) {
             if (err) {
                 responseHelper.baseResponse(false, null, statusCode.badRequest, 'Please check your request and try again.', res)
@@ -161,7 +162,7 @@ app.put('/api/updateEmployeeData', (req, res) => {
 // API to delete employee data
 app.delete('/api/deleteEmployeeData', async (req, res) => {
     if (isSQLConfigurationSuccess) {
-        const query = "SELECT EmployeeName FROM EmployeeData WHERE `Employee ID`= " + req.body.employeeID
+        const query = queries.fetchEmployeeNameByID + req.body.employeeID
         connection.query(query, function (err, row) {
             if (err) {
                 responseHelper.baseResponse(false, null, statusCode.notFound, 'Employee with the given ID does not exist', res)
@@ -172,7 +173,7 @@ app.delete('/api/deleteEmployeeData', async (req, res) => {
                     return;
                 }
                 // Employee Exist Perform Delete operation
-                const query = "DELETE FROM `EmployeeData` WHERE `Employee ID` = " + req.body.employeeID
+                const query = queries.deleteEmployeeByID + req.body.employeeID
                 connection.query(query, (err, result) => {
                     if (err) {
                         responseHelper.baseResponse(false, null, statusCode.badRequest, 'Failed to delete data into database, Please check your request and try again.', res)
